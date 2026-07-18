@@ -103,6 +103,10 @@
             {% endif %}
         {% endblock %}
 
+        {% block layout_head_json_ld %}
+            {% sw_include '@Storefront/storefront/layout/structured-data.html.twig' %}
+        {% endblock %}
+
         {% block layout_head_title %}
             <title itemprop="name">
                 {% block layout_head_title_inner %}{{- metaTitle -}}{% endblock %}

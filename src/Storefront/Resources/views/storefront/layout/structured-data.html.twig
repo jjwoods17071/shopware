@@ -1,0 +1,50 @@
+{# @sw-package framework #}
+
+{#
+    Sitewide JSON-LD structured data (schema.org).
+
+    Emits `Organization` and `WebSite` data so search engines can associate the
+    storefront with a brand entity and offer a sitelinks search box in the SERP.
+    Page types (e.g. product detail) add their own JSON-LD by overriding the
+    `layout_head_json_ld` block in `layout/meta.html.twig`.
+#}
+{% block layout_head_json_ld_sitewide %}
+    {% set basicConfig = config('core.basicInformation') %}
+    {% set shopName = basicConfig.shopName %}
+    {% set baseUrl = seoUrl('frontend.home.page') %}
+
+    {% block layout_head_json_ld_organization %}
+        {% set organization = {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            'name': shopName,
+            'url': baseUrl
+        } %}
+
+        {% set logoUrl = theme_config('sw-logo-desktop') %}
+        {% if logoUrl %}
+            {% set organization = organization|merge({ 'logo': logoUrl }) %}
+        {% endif %}
+
+        <script type="application/ld+json">{{ organization|json_encode()|raw }}</script>
+    {% endblock %}
+
+    {% block layout_head_json_ld_website %}
+        {% set website = {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            'name': shopName,
+            'url': baseUrl,
+            'potentialAction': {
+                '@type': 'SearchAction',
+                'target': {
+                    '@type': 'EntryPoint',
+                    'urlTemplate': seoUrl('frontend.search.page') ~ '?search={search_term_string}'
+                },
+                'query-input': 'required name=search_term_string'
+            }
+        } %}
+
+        <script type="application/ld+json">{{ website|json_encode()|raw }}</script>
+    {% endblock %}
+{% endblock %}
