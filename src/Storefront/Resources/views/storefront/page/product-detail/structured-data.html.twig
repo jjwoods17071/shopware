@@ -108,3 +108,33 @@
 
     <script type="application/ld+json">{{ structuredData|json_encode()|raw }}</script>
 {% endblock %}
+
+{% block layout_head_json_ld_breadcrumb %}
+    {% if page.product.seoCategory %}
+        {% set breadcrumbCategories = sw_breadcrumb_full(page.product.seoCategory, context) %}
+        {% set elements = [] %}
+        {% set position = 1 %}
+
+        {% for breadcrumbCategory in breadcrumbCategories %}
+            {% if breadcrumbCategory.type != 'folder' and breadcrumbCategory.seoUrl %}
+                {% set elements = elements|merge([{
+                    '@type': 'ListItem',
+                    'position': position,
+                    'name': breadcrumbCategory.translated.name,
+                    'item': breadcrumbCategory.seoUrl
+                }]) %}
+                {% set position = position + 1 %}
+            {% endif %}
+        {% endfor %}
+
+        {% if elements|length > 0 %}
+            {% set breadcrumbList = {
+                '@context': 'https://schema.org',
+                '@type': 'BreadcrumbList',
+                'itemListElement': elements
+            } %}
+
+            <script type="application/ld+json">{{ breadcrumbList|json_encode()|raw }}</script>
+        {% endif %}
+    {% endif %}
+{% endblock %}
