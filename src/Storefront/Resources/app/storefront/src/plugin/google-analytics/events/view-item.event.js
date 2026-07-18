@@ -34,11 +34,28 @@ export default class ViewItemEvent extends AnalyticsEvent
             return;
         }
 
+        const item = {
+            'id': productId,
+            'name': productName,
+        };
+
+        // Enrich with brand (schema.org/Brand microdata) when available
+        const brandElement = productItemElement.querySelector('[itemprop="brand"] [itemprop="name"]');
+        if (brandElement && brandElement.content) {
+            item.item_brand = brandElement.content;
+        }
+
+        // Enrich with the deepest breadcrumb category as item_category when available
+        const breadcrumbNameElements = document.querySelectorAll('.breadcrumb-item [itemprop="name"]');
+        if (breadcrumbNameElements.length) {
+            const category = breadcrumbNameElements[breadcrumbNameElements.length - 1].textContent.trim();
+            if (category) {
+                item.item_category = category;
+            }
+        }
+
         gtag('event', 'view_item', {
-            'items': [{
-                'id': productId,
-                'name': productName,
-            }],
+            'items': [item],
         });
     }
 }

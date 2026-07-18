@@ -56,3 +56,9 @@
 
     <link rel="canonical" href="{{ seoUrl('frontend.detail.page', { productId: canonicalUrl }) }}">
 {% endblock %}
+
+{% block layout_head_json_ld %}
+    {{ parent() }}
+
+    {% sw_include '@Storefront/storefront/page/product-detail/structured-data.html.twig' %}
+{% endblock %}

@@ -567,5 +567,10 @@
             <argument type="service" id="Doctrine\DBAL\Connection"/>
             <tag name="shopware.sync.fk_resolver"/>
         </service>
+
+        <service id="Shopware\Core\Content\Product\Command\ProductCatalogueAuditCommand">
+            <argument type="service" id="product.repository"/>
+            <tag name="console.command"/>
+        </service>
     </services>
 </container>

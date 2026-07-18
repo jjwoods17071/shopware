@@ -12,7 +12,15 @@
         {% set childCount = product.childCount %}
         {% set routeArguments = childCount > 0 and searchTerm ? { productId: id, search: searchTerm } : { productId: id } %}
 
-        <div class="card product-box box-{{ layout }}" data-product-information="{{ {id, name}|json_encode }}">
+        {% set gaProductInformation = { id: id, name: name, item_id: product.productNumber } %}
+        {% if product.manufacturer and product.manufacturer.translated.name %}
+            {% set gaProductInformation = gaProductInformation|merge({ item_brand: product.manufacturer.translated.name }) %}
+        {% endif %}
+        {% if product.seoCategory and product.seoCategory.translated.name %}
+            {% set gaProductInformation = gaProductInformation|merge({ item_category: product.seoCategory.translated.name }) %}
+        {% endif %}
+
+        <div class="card product-box box-{{ layout }}" data-product-information="{{ gaProductInformation|json_encode }}">
             {% block component_product_box_content %}
                 <div class="card-body">
                     {% block component_product_box_badges %}

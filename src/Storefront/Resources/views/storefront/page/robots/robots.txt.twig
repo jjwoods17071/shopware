@@ -18,6 +18,10 @@
 
                 {# Allow all media files to be indexed, including the GET requests with the cache buster #}
                 Allow: /media/*?ts=
+
+                {# Keep crawl budget off internal search result pages, which produce thin and duplicate content #}
+                Disallow: /search
+                Disallow: /suggest
             {% endblock %}
 
             {% block robots_txt_content_domain_rules_container %}

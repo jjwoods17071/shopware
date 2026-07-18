@@ -1,0 +1,140 @@
+{# @sw-package framework #}
+
+{#
+    Consolidated `Product` JSON-LD for the product detail page.
+
+    This complements the inline microdata (itemprop) that is spread across the
+    buy widget: Google's documentation and Rich Results Test favour JSON-LD, and a
+    single self-contained block is far more robust against theme overrides than
+    microdata nested across multiple template fragments.
+
+    Ratings are intentionally left to the existing `AggregateRating` microdata
+    (`component/review/review-widget.html.twig`), which has access to the review
+    count required for a valid `aggregateRating`. Emitting an `aggregateRating`
+    here without a count would produce invalid structured data.
+#}
+{% block layout_head_json_ld_product %}
+    {% set product = page.product %}
+
+    {% set productUrl = seoUrl('frontend.detail.page', { productId: product.id }) %}
+
+    {# Availability mirrors the logic used in component/delivery-information.html.twig #}
+    {% set availability = 'https://schema.org/InStock' %}
+    {% if product.isCloseout and product.stock < product.minPurchase %}
+        {% set availability = 'https://schema.org/OutOfStock' %}
+    {% elseif product.stock < product.minPurchase %}
+        {% set availability = 'https://schema.org/BackOrder' %}
+    {% endif %}
+
+    {# Collect the cover image first, followed by the remaining gallery images #}
+    {% set images = [] %}
+    {% if product.cover and product.cover.media and product.cover.media.url %}
+        {% set images = images|merge([product.cover.media.url]) %}
+    {% endif %}
+    {% for mediaItem in product.media %}
+        {% if mediaItem.media and mediaItem.media.url and mediaItem.media.url not in images %}
+            {% set images = images|merge([mediaItem.media.url]) %}
+        {% endif %}
+    {% endfor %}
+
+    {% set decimals = context.currency.itemRounding.decimals %}
+
+    {% if product.calculatedPrices|length > 1 %}
+        {% set lowestPrice = false %}
+        {% set highestPrice = false %}
+        {% for price in product.calculatedPrices %}
+            {% if lowestPrice is same as(false) or price.unitPrice < lowestPrice %}
+                {% set lowestPrice = price.unitPrice %}
+            {% endif %}
+            {% if highestPrice is same as(false) or price.unitPrice > highestPrice %}
+                {% set highestPrice = price.unitPrice %}
+            {% endif %}
+        {% endfor %}
+
+        {% set offers = {
+            '@type': 'AggregateOffer',
+            'priceCurrency': context.currency.isoCode,
+            'lowPrice': lowestPrice|round(decimals),
+            'highPrice': highestPrice|round(decimals),
+            'offerCount': product.calculatedPrices|length,
+            'availability': availability,
+            'url': productUrl
+        } %}
+    {% else %}
+        {% set offers = {
+            '@type': 'Offer',
+            'priceCurrency': context.currency.isoCode,
+            'price': product.calculatedPrice.unitPrice|round(decimals),
+            'availability': availability,
+            'itemCondition': 'https://schema.org/NewCondition',
+            'url': productUrl
+        } %}
+    {% endif %}
+
+    {% set structuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': product.translated.name,
+        'sku': product.productNumber,
+        'url': productUrl,
+        'offers': offers
+    } %}
+
+    {% set description = (product.translated.metaDescription ?: product.translated.description)|striptags|trim %}
+    {% if description %}
+        {% set structuredData = structuredData|merge({ 'description': description }) %}
+    {% endif %}
+
+    {% if images|length > 0 %}
+        {% set structuredData = structuredData|merge({ 'image': images }) %}
+    {% endif %}
+
+    {% if product.manufacturer and product.manufacturer.translated.name %}
+        {% set structuredData = structuredData|merge({
+            'brand': {
+                '@type': 'Brand',
+                'name': product.manufacturer.translated.name
+            }
+        }) %}
+    {% endif %}
+
+    {% if product.ean %}
+        {% set structuredData = structuredData|merge({ 'gtin13': product.ean }) %}
+    {% endif %}
+
+    {% if product.manufacturerNumber %}
+        {% set structuredData = structuredData|merge({ 'mpn': product.manufacturerNumber }) %}
+    {% endif %}
+
+    <script type="application/ld+json">{{ structuredData|json_encode()|raw }}</script>
+{% endblock %}
+
+{% block layout_head_json_ld_breadcrumb %}
+    {% if page.product.seoCategory %}
+        {% set breadcrumbCategories = sw_breadcrumb_full(page.product.seoCategory, context) %}
+        {% set elements = [] %}
+        {% set position = 1 %}
+
+        {% for breadcrumbCategory in breadcrumbCategories %}
+            {% if breadcrumbCategory.type != 'folder' and breadcrumbCategory.seoUrl %}
+                {% set elements = elements|merge([{
+                    '@type': 'ListItem',
+                    'position': position,
+                    'name': breadcrumbCategory.translated.name,
+                    'item': breadcrumbCategory.seoUrl
+                }]) %}
+                {% set position = position + 1 %}
+            {% endif %}
+        {% endfor %}
+
+        {% if elements|length > 0 %}
+            {% set breadcrumbList = {
+                '@context': 'https://schema.org',
+                '@type': 'BreadcrumbList',
+                'itemListElement': elements
+            } %}
+
+            <script type="application/ld+json">{{ breadcrumbList|json_encode()|raw }}</script>
+        {% endif %}
+    {% endif %}
+{% endblock %}
